@@ -1,38 +1,27 @@
 package proxy
 
 import (
-    "log"
-    //"fmt"
-    "time"
+    //"log"
+    "fmt"
+    //"time"
     //"net/url"
     //"net/http"
     //"net/http/httputil"
     //"github.com/gorilla/mux"
-    "context"
-    "github.com/coreos/etcd/client"
+    "github.com/microcats/hellgate/backend"
+    //"github.com/coreos/etcd/client"
+    //"context"
 )
 
 
 func NewMultipleHostReverseProxy() {
-    cfg := client.Config{
-        Endpoints:               []string{"http://127.0.0.1:2379"},
-        Transport:               client.DefaultTransport,
-        // set timeout per request to fail fast when the target endpoint is unavailable
-        HeaderTimeoutPerRequest: time.Second,
-    }
-
-    c, err := client.New(cfg)
-    if err != nil {
-        log.Fatal(err)
-    }
-    kapi := client.NewKeysAPI(c)
-
-    resp, err := kapi.Get(context.Background(), "/hellgate/apis", &client.GetOptions{Recursive: true})
-    if err != nil {
-        log.Fatal(err)
-    } else {
-        log.Println(resp.Node.Nodes)
-
+    machines := []string{"http://127.0.0.1:2379"}
+    etcd, _ := backend.NewEtcdClient(machines, "", "", "", false, "", "")
+    result, _ := etcd.Get("/hellgate/apis")
+    //{"prefix":"test1","upstream_url":"http://127.0.0.1:9090", "create_at":"2016-02-01 15:11:22"}
+    for _, value := range result.Node.Nodes {
+        list, _ := etcd.Get(value.Key)
+        fmt.Println(list.Node.Value)
     }
 
 
