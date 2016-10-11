@@ -1,85 +1,60 @@
 package proxy
 
 import (
-    "fmt"
+    "log"
+    //"fmt"
     "time"
-    "net/url"
-    "net/http"
-    "net/http/httputil"
-    //"encoding/json"
-    "io/ioutil"
+    //"net/url"
+    //"net/http"
+    //"net/http/httputil"
+    //"github.com/gorilla/mux"
+    "context"
+    "github.com/coreos/etcd/client"
 )
 
-type upstream struct {
-    prefix  string
-    host string
-}
 
-func New(prefix string, host string) *upstream {
-    upstream := new(upstream)
-    upstream.prefix = prefix
-    upstream.host = host
-    return upstream
-}
+func NewMultipleHostReverseProxy() {
+    cfg := client.Config{
+        Endpoints:               []string{"http://127.0.0.1:2379"},
+        Transport:               client.DefaultTransport,
+        // set timeout per request to fail fast when the target endpoint is unavailable
+        HeaderTimeoutPerRequest: time.Second,
+    }
 
-func (u *upstream) Register() {
-    http.HandleFunc(u.getPrefix(), u.handler)
-}
+    c, err := client.New(cfg)
+    if err != nil {
+        log.Fatal(err)
+    }
+    kapi := client.NewKeysAPI(c)
 
-func (u *upstream) getPrefix() string {
-    return fmt.Sprintf("/%s/", u.prefix)
-}
+    resp, err := kapi.Get(context.Background(), "/hellgate/apis", &client.GetOptions{Recursive: true})
+    if err != nil {
+        log.Fatal(err)
+    } else {
+        log.Println(resp.Node.Nodes)
 
-func (u *upstream) handler(w http.ResponseWriter, request *http.Request) {
-    upstream, err := url.Parse(u.host)
+    }
+
+
+/*
+    upstreamUrl := "http://127.0.0.1:9090"
+    remote, err := url.Parse(upstreamUrl)
     if err != nil {
         panic(err)
     }
 
 
-    if (request.Header.Get("Content-Type") == "application/x-www-form-urlencoded") {
-        request.ParseForm()
-    } else {
-        request.ParseMultipartForm(1024)
-    }
-    
-
-    body, _ := ioutil.ReadAll(request.Body)
-    fmt.Printf("%s", body)
-    fmt.Println(request.Form)
-    fmt.Println(request.PostForm)
-    fmt.Println(request.MultipartForm)
-
-
-    //request.ParseForm()
-
-    //r.ParseForm()
-    //r.ParseMultipartForm(1024)
-    //application/json
-    //multipart/form-data
-    //application/x-www-form-urlencoded
-    //fmt.Println(r.Header.Get("Content-Type"))
-
-    for k, v := range request.Header {
-        fmt.Printf("key[%s] value[%s]\n", k, v)
-    }
-
-    fmt.Println(request.Method)
-    fmt.Println(request.Host)
-    fmt.Println(request.TransferEncoding)
-    fmt.Println(request.ContentLength)
-    fmt.Println(request.URL)
-    fmt.Println(request.Proto)
-    fmt.Println(request.ProtoMajor)
-    fmt.Println(request.ProtoMinor)
-
-
-    proxy := http.StripPrefix(u.getPrefix(), httputil.NewSingleHostReverseProxy(upstream))
-    start := time.Now()
-    proxy.ServeHTTP(w, request)
-    responseTime := time.Since(start).Seconds()
-    fmt.Println(request.RemoteAddr)
-    fmt.Println(request.RequestURI)
-    fmt.Println(responseTime)
-
+    http.Handle("/", r)
+    http.ListenAndServe(":8000", r)
+*/
 }
+/*
+func handler(p *httputil.ReverseProxy) func(http.ResponseWriter, *http.Request) {
+    return func(responseWriter http.ResponseWriter, request *http.Request) {
+        request.URL.Path = mux.Vars(request)["rest"]
+        t := time.Now()
+        p.ServeHTTP(responseWriter, request)
+        fmt.Println(time.Since(t).Seconds())
+    }
+}
+*/

@@ -12,6 +12,15 @@ func main() {
         })
     })
 
+    r.GET("/ping/pong", func(c *gin.Context) {
+        //time.Sleep(2000 * time.Millisecond)
+        c.JSON(200, gin.H{
+            "message": "pong",
+            "aaa": c.Query("aa"),
+        })
+    })
+
+
     r.POST("/ping", func(c *gin.Context) {
         //time.Sleep(2000 * time.Millisecond)
         c.JSON(200, gin.H{
