@@ -37,7 +37,7 @@ func NewEtcdClient(machines []string, cert, key, caCert string, basicAuth bool, 
         HeaderTimeoutPerRequest: time.Duration(3) * time.Second,
     }
 
-    if basicAuth {
+    if basicAuth == true {
         cfg.Username = username
         cfg.Password = password
     }
@@ -77,5 +77,9 @@ func NewEtcdClient(machines []string, cert, key, caCert string, basicAuth bool, 
 }
 
 func (c *Client) Get(key string) (*client.Response, error) {
-    return c.client.Get(context.Background(), key, &client.GetOptions{Recursive:true})
+    return c.client.Get(context.Background(), key, &client.GetOptions{
+        Recursive: true,
+        Sort:      true,
+        Quorum:    true,
+    })
 }

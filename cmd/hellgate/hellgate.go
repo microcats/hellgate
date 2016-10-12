@@ -1,12 +1,19 @@
 package main
 
 import (
-    //"net/http"
+    "fmt"
+    "time"
+    "net/http"
     "github.com/microcats/hellgate/proxy"
 )
 
 func main() {
-    proxy.NewMultipleHostReverseProxy()
-    //http.Handle("/", r)
-    //http.ListenAndServe(":8000", r)
+    t := time.Now()
+    r, err := proxy.NewMultipleHostReverseProxy()
+    if err != nil {
+        panic(err)
+    }
+    fmt.Println(time.Since(t).Seconds())
+    http.Handle("/", r)
+    http.ListenAndServe(":8000", r)
 }

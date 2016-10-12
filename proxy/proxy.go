@@ -2,42 +2,68 @@ package proxy
 
 import (
     //"log"
+    "io"
     "fmt"
-    //"time"
-    //"net/url"
-    //"net/http"
-    //"net/http/httputil"
-    //"github.com/gorilla/mux"
+    "time"
+    "strings"
+    "encoding/json"
+    "net/url"
+    "net/http"
+    "net/http/httputil"
+    "github.com/gorilla/mux"
     "github.com/microcats/hellgate/backend"
-    //"github.com/coreos/etcd/client"
-    //"context"
 )
 
 
-func NewMultipleHostReverseProxy() {
+type apiList struct {
+    Prefix, UpstreamUrl string
+    CreateAt time.Time
+}
+
+func getApiList() (map[int]*apiList, error) {
     machines := []string{"http://127.0.0.1:2379"}
     etcd, _ := backend.NewEtcdClient(machines, "", "", "", false, "", "")
     result, _ := etcd.Get("/hellgate/apis")
-    //{"prefix":"test1","upstream_url":"http://127.0.0.1:9090", "create_at":"2016-02-01 15:11:22"}
-    for _, value := range result.Node.Nodes {
+    //{"prefix":"test1","upstreamUrl":"http://127.0.0.1:9090", "createAt":"2016-02-01 15:11:22"}
+    apiLists := make(map[int]*apiList, 0)
+    for key, value := range result.Node.Nodes {
+        apiList := new(apiList)
         list, _ := etcd.Get(value.Key)
-        fmt.Println(list.Node.Value)
+        decode := json.NewDecoder(strings.NewReader(list.Node.Value))
+        if err := decode.Decode(&apiList); err == io.EOF {
+            return nil, err
+        } else if err != nil {
+            return nil, err
+        }
+
+        apiLists[key] = apiList
     }
 
+    return apiLists, nil
+}
 
-/*
-    upstreamUrl := "http://127.0.0.1:9090"
-    remote, err := url.Parse(upstreamUrl)
+func NewMultipleHostReverseProxy() (*mux.Router, error) {
+    apis, err := getApiList()
     if err != nil {
         panic(err)
     }
 
+    r := mux.NewRouter()
+    for _, api := range apis {
+        fmt.Println(api.UpstreamUrl)
+        remote, err := url.Parse(api.UpstreamUrl)
+        if err != nil {
+            return nil, err
+        }
 
-    http.Handle("/", r)
-    http.ListenAndServe(":8000", r)
-*/
+        proxy := httputil.NewSingleHostReverseProxy(remote)
+        path := fmt.Sprintf("/%s/{rest:.*}", api.Prefix)
+        r.HandleFunc(path, handler(proxy))
+    }
+
+    return r, nil
 }
-/*
+
 func handler(p *httputil.ReverseProxy) func(http.ResponseWriter, *http.Request) {
     return func(responseWriter http.ResponseWriter, request *http.Request) {
         request.URL.Path = mux.Vars(request)["rest"]
@@ -46,4 +72,3 @@ func handler(p *httputil.ReverseProxy) func(http.ResponseWriter, *http.Request) 
         fmt.Println(time.Since(t).Seconds())
     }
 }
-*/
