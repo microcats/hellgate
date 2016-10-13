@@ -21,8 +21,6 @@ type apiList struct {
 }
 
 func getApiList() (map[int]*apiList, error) {
-    machines := []string{"http://127.0.0.1:2379"}
-    etcd, _ := backend.NewEtcdClient(machines, "", "", "", false, "", "")
     result, _ := etcd.Get("/hellgate/apis")
     //{"prefix":"test1","upstreamUrl":"http://127.0.0.1:9090", "createAt":"2016-02-01 15:11:22"}
     apiLists := make(map[int]*apiList, 0)
