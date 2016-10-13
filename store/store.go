@@ -8,27 +8,27 @@ import (
     "github.com/microcats/hellgate/backend"
 )
 
-type ReverseProxy struct {
+type ApiInfo struct {
     Prefix, UpstreamUrl string
     CreateAt time.Time
 }
 
-func GetReverseProxy() (c *backend.Client, map[int]*ReverseProxy, error) {
-    result, _ := c.Get("/hellgate/apis")
+func GetApiInfo() (c *backend.Client, map[int]*ApiInfo, error) {
+    list, _ := c.Get("/hellgate/apis")
     //{"prefix":"test1","upstreamUrl":"http://127.0.0.1:9090", "createAt":"2016-02-01 15:11:22"}
-    reverseProxys := make(map[int]*ReverseProxy, 0)
-    for key, value := range result.Node.Nodes {
-        reverseProxy := new(ReverseProxy)
-        list, _ := c.Get(value.Key)
-        decode := json.NewDecoder(strings.NewReader(list.Node.Value))
-        if err := decode.Decode(&reverseProxy); err == io.EOF {
+    apiInfos := make(map[int]*ApiInfo, 0)
+    for key, value := range list.Node.Nodes {
+        apiInfo := new(ApiInfo)
+        info, _ := c.Get(value.Key)
+        decode := json.NewDecoder(strings.NewReader(info.Node.Value))
+        if err := decode.Decode(&apiInfo); err == io.EOF {
             return nil, err
         } else if err != nil {
             return nil, err
         }
 
-        reverseProxys[key] = reverseProxy
+        apiInfos[key] = apiInfo
     }
 
-    return reverseProxys, nil
+    return apiInfos, nil
 }
