@@ -20,7 +20,6 @@ func NewMultipleHostReverseProxy(c *backend.Client) (*mux.Router, error) {
 
     r := mux.NewRouter()
     for _, api := range apis {
-        fmt.Println(api.UpstreamUrl)
         remote, err := url.Parse(api.UpstreamUrl)
         if err != nil {
             return nil, err
