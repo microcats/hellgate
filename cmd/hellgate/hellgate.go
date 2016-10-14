@@ -19,7 +19,7 @@ func main() {
         panic(err)
     }
 
-    r, err := proxy.NewMultipleHostReverseProxy()
+    r, err := proxy.NewMultipleHostReverseProxy(storeClient)
     if err != nil {
         panic(err)
     }

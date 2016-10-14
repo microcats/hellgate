@@ -1,47 +1,19 @@
 package proxy
 
 import (
-    //"log"
-    "io"
     "fmt"
     "time"
-    "strings"
-    "encoding/json"
     "net/url"
     "net/http"
     "net/http/httputil"
     "github.com/gorilla/mux"
     "github.com/microcats/hellgate/backend"
+    "github.com/microcats/hellgate/store"
 )
 
 
-type apiList struct {
-    Prefix, UpstreamUrl string
-    CreateAt time.Time
-}
-
-func getApiList() (map[int]*apiList, error) {
-    result, _ := etcd.Get("/hellgate/apis")
-    //{"prefix":"test1","upstreamUrl":"http://127.0.0.1:9090", "createAt":"2016-02-01 15:11:22"}
-    apiLists := make(map[int]*apiList, 0)
-    for key, value := range result.Node.Nodes {
-        apiList := new(apiList)
-        list, _ := etcd.Get(value.Key)
-        decode := json.NewDecoder(strings.NewReader(list.Node.Value))
-        if err := decode.Decode(&apiList); err == io.EOF {
-            return nil, err
-        } else if err != nil {
-            return nil, err
-        }
-
-        apiLists[key] = apiList
-    }
-
-    return apiLists, nil
-}
-
-func NewMultipleHostReverseProxy() (*mux.Router, error) {
-    apis, err := getApiList()
+func NewMultipleHostReverseProxy(c *backend.Client) (*mux.Router, error) {
+    apis, err := store.GetApiInfo(c)
     if err != nil {
         panic(err)
     }
